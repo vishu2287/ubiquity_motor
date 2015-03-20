@@ -72,162 +72,162 @@ void WriteAll(int fd, const void *data_, size_t size) {
 }  // namespace
 
 void *UbiquityMotorReaderThread(void *arg) {
-  UbiquityMotor *hc = reinterpret_cast<UbiquityMotor *>(arg);
-  struct motor_message message;
-  size_t fill = 0;
+  // UbiquityMotor *hc = reinterpret_cast<UbiquityMotor *>(arg);
+  // struct motor_message message;
+  // size_t fill = 0;
 
-  ros::Time last_odom = ros::Time::now();
-  ros::Duration odom_rate(1/50.0);
+  // ros::Time last_odom = ros::Time::now();
+  // ros::Duration odom_rate(1/50.0);
 
-  for (;; fill = 0) {
-    while (fill < sizeof(message)) {
-      if (1 != read(hc->fd_, (char *)&message + fill, 1)) {
-        ROS_FATAL("Read error: %s (fd = %d)", strerror(errno), hc->fd_);
-        ros::shutdown();
-      }
+  // for (;; fill = 0) {
+  //   while (fill < sizeof(message)) {
+  //     if (1 != read(hc->fd_, (char *)&message + fill, 1)) {
+  //       ROS_FATAL("Read error: %s (fd = %d)", strerror(errno), hc->fd_);
+  //       ros::shutdown();
+  //     }
 
-      ++fill;
+  //     ++fill;
 
-      // Synchronize byte stream.
-      if (fill == 1 && message.sync[0] != MOTOR_SYNC_BYTE0)
-        fill = 0;
-      else if (fill == 2 && message.sync[1] != MOTOR_SYNC_BYTE1)
-        fill = 0;
-    }
+  //     // Synchronize byte stream.
+  //     if (fill == 1 && message.sync[0] != MOTOR_SYNC_BYTE0)
+  //       fill = 0;
+  //     else if (fill == 2 && message.sync[1] != MOTOR_SYNC_BYTE1)
+  //       fill = 0;
+  //   }
 
-    // Discard corrupted messages.
-    uint8_t checksum = crc8(
-        &message.type, sizeof(message) - offsetof(struct motor_message, type));
-    if (checksum != message.crc8) continue;
+  //   // Discard corrupted messages.
+  //   uint8_t checksum = crc8(
+  //       &message.type, sizeof(message) - offsetof(struct motor_message, type));
+  //   if (checksum != message.crc8) continue;
 
-    ros::Time current_time = ros::Time::now();
+  //   ros::Time current_time = ros::Time::now();
 
-    switch (message.type) {
-      case MOTOR_MSG_ODOMETER:
+  //   switch (message.type) {
+  //     case MOTOR_MSG_ODOMETER:
 
-        if (hc->has_odometer_) {
-          double delta_time = (current_time - hc->last_odometry_).toSec();
+  //       if (hc->has_odometer_) {
+  //         double delta_time = (current_time - hc->last_odometry_).toSec();
 
-          int32_t left_delta =
-              (int32_t) message.u.odometer.motor0 - hc->odometer_[0];
-          int32_t right_delta =
-              (int32_t) message.u.odometer.motor1 - hc->odometer_[1];
+  //         int32_t left_delta =
+  //             (int32_t) message.u.odometer.motor0 - hc->odometer_[0];
+  //         int32_t right_delta =
+  //             (int32_t) message.u.odometer.motor1 - hc->odometer_[1];
 
-          /* Handle 16 bit arithmetic overflow.  */
-          if (left_delta <= -0x8000)
-            left_delta += 0x10000;
-          else if (left_delta >= 0x8000)
-            left_delta -= 0x10000;
-          if (right_delta <= -0x8000)
-            right_delta += 0x10000;
-          else if (right_delta >= 0x8000)
-            right_delta -= 0x10000;
+  //         /* Handle 16 bit arithmetic overflow.  */
+  //         if (left_delta <= -0x8000)
+  //           left_delta += 0x10000;
+  //         else if (left_delta >= 0x8000)
+  //           left_delta -= 0x10000;
+  //         if (right_delta <= -0x8000)
+  //           right_delta += 0x10000;
+  //         else if (right_delta >= 0x8000)
+  //           right_delta -= 0x10000;
 
-          hc->position_[0] += left_delta;
-          hc->position_[1] += right_delta;
+  //         hc->position_[0] += left_delta;
+  //         hc->position_[1] += right_delta;
 
-          // compute our odometry position from deltas
-          double d_left = left_delta * UbiquityMotor::sensor_distance;
-          double d_right = -right_delta * UbiquityMotor::sensor_distance;
+  //         // compute our odometry position from deltas
+  //         double d_left = left_delta * UbiquityMotor::sensor_distance;
+  //         double d_right = -right_delta * UbiquityMotor::sensor_distance;
 
-          double dist = (d_left + d_right) / 2.0f;
+  //         double dist = (d_left + d_right) / 2.0f;
 
-          double dx = dist * cos(hc->odom_theta_);
-          double dy = dist * sin(hc->odom_theta_);
-          // baseline between wheels is wheel_base
-          double d_theta = (d_right - d_left) / UbiquityMotor::wheel_base;
+  //         double dx = dist * cos(hc->odom_theta_);
+  //         double dy = dist * sin(hc->odom_theta_);
+  //         // baseline between wheels is wheel_base
+  //         double d_theta = (d_right - d_left) / UbiquityMotor::wheel_base;
 
-          hc->odom_x_ += dx;
-          hc->odom_y_ += dy;
-          hc->odom_theta_ += d_theta;
+  //         hc->odom_x_ += dx;
+  //         hc->odom_y_ += dy;
+  //         hc->odom_theta_ += d_theta;
 
-          // publish joint states, odometry and tf
-          if(current_time >= last_odom + odom_rate) {
-              last_odom = current_time;
-              double left_angle =
-                  hc->position_[0] * UbiquityMotor::sensor_distance /
-                  (UbiquityMotor::wheel_diameter * 0.5f);
-              double right_angle =
-                  hc->position_[1] * UbiquityMotor::sensor_distance /
-                  (UbiquityMotor::wheel_diameter * 0.5f);
-              double left_vel =
-                  left_delta * UbiquityMotor::sensor_distance / delta_time;
-              double right_vel =
-                  right_delta * UbiquityMotor::sensor_distance / delta_time;
+  //         // publish joint states, odometry and tf
+  //         if(current_time >= last_odom + odom_rate) {
+  //             last_odom = current_time;
+  //             double left_angle =
+  //                 hc->position_[0] * UbiquityMotor::sensor_distance /
+  //                 (UbiquityMotor::wheel_diameter * 0.5f);
+  //             double right_angle =
+  //                 hc->position_[1] * UbiquityMotor::sensor_distance /
+  //                 (UbiquityMotor::wheel_diameter * 0.5f);
+  //             double left_vel =
+  //                 left_delta * UbiquityMotor::sensor_distance / delta_time;
+  //             double right_vel =
+  //                 right_delta * UbiquityMotor::sensor_distance / delta_time;
 
-              sensor_msgs::JointState joints;
+  //             sensor_msgs::JointState joints;
 
-              joints.header.stamp = current_time;
+  //             joints.header.stamp = current_time;
 
-              joints.name.push_back(hc->left_motor_joint_name_);
-              joints.position.push_back(left_angle);
-              joints.velocity.push_back(left_vel);
-              joints.effort.push_back(0.0);
+  //             joints.name.push_back(hc->left_motor_joint_name_);
+  //             joints.position.push_back(left_angle);
+  //             joints.velocity.push_back(left_vel);
+  //             joints.effort.push_back(0.0);
 
-              joints.name.push_back(hc->right_motor_joint_name_);
-              joints.position.push_back(right_angle);
-              joints.velocity.push_back(right_vel);
-              joints.effort.push_back(0.0);
+  //             joints.name.push_back(hc->right_motor_joint_name_);
+  //             joints.position.push_back(right_angle);
+  //             joints.velocity.push_back(right_vel);
+  //             joints.effort.push_back(0.0);
 
-              hc->odometry_pub_.publish(joints);
+  //             hc->odometry_pub_.publish(joints);
 
-              // Generate a nav_msgs::Odometry for position and publish to /odom
-              nav_msgs::Odometry odom;
-              odom.header.stamp = current_time;
-              odom.header.frame_id = "odom";
-              odom.child_frame_id = "base_link";
+  //             // Generate a nav_msgs::Odometry for position and publish to /odom
+  //             nav_msgs::Odometry odom;
+  //             odom.header.stamp = current_time;
+  //             odom.header.frame_id = "odom";
+  //             odom.child_frame_id = "base_link";
 
-              odom.pose.pose.position.x = hc->odom_x_;
-              odom.pose.pose.position.y = hc->odom_y_;
+  //             odom.pose.pose.position.x = hc->odom_x_;
+  //             odom.pose.pose.position.y = hc->odom_y_;
               
-              // compute a quaternion for our yaw
-              geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(
-                  hc->odom_theta_);
+  //             // compute a quaternion for our yaw
+  //             geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(
+  //                 hc->odom_theta_);
 
-              odom.pose.pose.orientation = odom_quat;
+  //             odom.pose.pose.orientation = odom_quat;
 
-              for (int i=0; i<36; i++) {
-                 odom.pose.covariance[i] = UbiquityMotor::odom_covariance[i];
-                 odom.twist.covariance[i] = UbiquityMotor::odom_covariance[i];
-              }
+  //             for (int i=0; i<36; i++) {
+  //                odom.pose.covariance[i] = UbiquityMotor::odom_covariance[i];
+  //                odom.twist.covariance[i] = UbiquityMotor::odom_covariance[i];
+  //             }
 
-              hc->nav_odom_pub_.publish(odom);
+  //             hc->nav_odom_pub_.publish(odom);
 
-              // generate a transform for postion and publish
-              geometry_msgs::TransformStamped odom_trans;
-              odom_trans.header.stamp = current_time;
-              odom_trans.header.frame_id = "odom";
-              odom_trans.child_frame_id = "base_link";
-              odom_trans.transform.translation.x = hc->odom_x_;
-              odom_trans.transform.translation.y = hc->odom_y_;
+  //             // generate a transform for postion and publish
+  //             geometry_msgs::TransformStamped odom_trans;
+  //             odom_trans.header.stamp = current_time;
+  //             odom_trans.header.frame_id = "odom";
+  //             odom_trans.child_frame_id = "base_link";
+  //             odom_trans.transform.translation.x = hc->odom_x_;
+  //             odom_trans.transform.translation.y = hc->odom_y_;
 
-              odom_trans.transform.rotation = odom_quat;
+  //             odom_trans.transform.rotation = odom_quat;
 
-              hc->tf_pub_.sendTransform(odom_trans);
-          }
+  //             hc->tf_pub_.sendTransform(odom_trans);
+  //         }
 
-        } else if (message.u.odometer.motor0 == hc->odometer_[0] &&
-                   message.u.odometer.motor1 == hc->odometer_[1]) {
-          hc->has_odometer_ = true;
-        }
+  //       } else if (message.u.odometer.motor0 == hc->odometer_[0] &&
+  //                  message.u.odometer.motor1 == hc->odometer_[1]) {
+  //         hc->has_odometer_ = true;
+  //       }
 
-        hc->odometer_[0] = message.u.odometer.motor0;
-        hc->odometer_[1] = message.u.odometer.motor1;
+  //       hc->odometer_[0] = message.u.odometer.motor0;
+  //       hc->odometer_[1] = message.u.odometer.motor1;
 
-        hc->last_odometry_ = current_time;
+  //       hc->last_odometry_ = current_time;
 
-        break;
-    }
-  }
+  //       break;
+  //   }
+  // }
 
-  return NULL;
+  // return NULL;
 }
 
 UbiquityMotor::UbiquityMotor() : done_(false), has_odometer_(false) {
   memset(position_, 0, sizeof position_);
 
   if (!nh_.getParam("/motor/controller_tty_name", controller_tty_name_))
-    controller_tty_name_ = "/dev/ttyACM0";
+    controller_tty_name_ = "/dev/ttyUSB1";
 
   if (!nh_.getParam("/motor/left/name", left_motor_joint_name_))
     left_motor_joint_name_ = "base_l_wheel_joint";
@@ -256,12 +256,12 @@ UbiquityMotor::UbiquityMotor() : done_(false), has_odometer_(false) {
     ros::shutdown();
   }
 
-  ROS_INFO("Setting baud rate to 115200 on %s", controller_tty_name_.c_str());
+  ROS_INFO("Setting baud rate to 9600 on %s", controller_tty_name_.c_str());
 
   struct termios tty;
   memset(&tty, 0, sizeof tty);
-  cfsetospeed(&tty, B115200);
-  cfsetispeed(&tty, B115200);
+  cfsetospeed(&tty, B9600);
+  cfsetispeed(&tty, B9600);
   cfmakeraw(&tty);
 
   if (tcsetattr(fd_, TCSANOW, &tty) != 0) {
@@ -317,15 +317,65 @@ void UbiquityMotor::SetWheelVelocities(float left_vel, float right_vel) {
 #undef CLAMP_TO_RANGE
 
   motor_message msg;
-  msg.sync[0] = MOTOR_SYNC_BYTE0;
-  msg.sync[1] = MOTOR_SYNC_BYTE1;
-  msg.type = MOTOR_MSG_REQUEST_SPEED;
-  msg.u.speed.motor0 = static_cast<int16_t>(roundf(left_vel));
-  msg.u.speed.motor1 = static_cast<int16_t>(roundf(right_vel));
+  // msg.sync[0] = MOTOR_SYNC_BYTE0;
+  // msg.sync[1] = MOTOR_SYNC_BYTE1;
+  // msg.type = MOTOR_MSG_REQUEST_SPEED;
+  // msg.u.speed.motor0 = static_cast<int16_t>(roundf(left_vel));
+  // msg.u.speed.motor1 = static_cast<int16_t>(roundf(right_vel));
 
-  msg.crc8 =
-      crc8(reinterpret_cast<char *>(&msg) + offsetof(motor_message, type),
-           sizeof(msg) - offsetof(motor_message, type));
+
+  msg.sync[0] = 0x7E;
+  msg.sync[1] = 0x01;
+  msg.type = 0xBB;
+  msg.addr = 0x07;
+  msg.data[0] = static_cast<int32_t>(roundf(left_vel)) >> 16;
+  msg.data[1] = (static_cast<int32_t>(roundf(left_vel)) >> 8) - (msg.data[0] << 8);
+  msg.data[2] = static_cast<int32_t>(roundf(left_vel)) - (msg.data[0]<<16)|(msg.data[1]<<8);
+
+  int sum = msg.sync[1] + msg.type + msg.addr + msg.data[0] + msg.data[1] + msg.data[2];
+  if (sum > 0xFF) {
+    int tmp;
+    tmp = sum >> 8;
+    tmp = tmp << 8;
+    msg.checksum = 0xFF - static_cast<uint8_t>(roundf(sum-tmp));
+  }
+  else {
+    msg.checksum = 0xFF - sum;
+  }
+
+  WriteAll(fd_, &msg, sizeof(msg));
+  
+  msg.sync[0] = 0x7E;
+  msg.sync[1] = 0x01;
+  msg.type = 0xBB;
+  msg.addr = 0x08;
+  msg.data[0] = static_cast<int32_t>(roundf(right_vel)) >> 16;
+  msg.data[1] = (static_cast<int32_t>(roundf(right_vel)) >> 8) - (msg.data[0] << 8);
+  msg.data[2] = static_cast<int32_t>(roundf(right_vel)) - (msg.data[0]<<16)|(msg.data[1]<<8);
+
+  sum = msg.sync[1] + msg.type + msg.addr + msg.data[0] + msg.data[1] + msg.data[2];
+  if (sum > 0xFF) {
+    int tmp;
+    tmp = sum >> 8;
+    tmp = tmp << 8;
+    msg.checksum = 0xFF - static_cast<uint8_t>(roundf(sum-tmp));
+  }
+  else {
+    msg.checksum = 0xFF - sum;
+  }
+
+  //msg.checksum = 0x3C;
+
+  //ROS_INFO("checksum %x", msg.checksum);
+
+  // msg.sync[0] = 0x7E;
+  // msg.sync[1] = 0x01;
+  // msg.type = 0xBB;
+  // msg.addr = 0x07;
+  // msg.data[0] = 0x00;
+  // msg.data[1] = 0x01;
+  // msg.data[2] = 0x2C;
+  // msg.checksum = 0x0f;
 
   WriteAll(fd_, &msg, sizeof(msg));
 }
