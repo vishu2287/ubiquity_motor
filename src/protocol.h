@@ -16,7 +16,7 @@ struct motor_message
   unsigned char sync[2]; /* MOTOR_SYNC_BYTE0, MOTOR_SYNC_BYTE1 */
   unsigned char type;
   unsigned char addr;
-  unsigned char data[3];
+  unsigned char data[4];
  // signed short data;
   unsigned char checksum;
 };

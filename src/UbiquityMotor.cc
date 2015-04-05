@@ -227,7 +227,7 @@ UbiquityMotor::UbiquityMotor() : done_(false), has_odometer_(false) {
   memset(position_, 0, sizeof position_);
 
   if (!nh_.getParam("/motor/controller_tty_name", controller_tty_name_))
-    controller_tty_name_ = "/dev/ttyUSB1";
+    controller_tty_name_ = "/dev/ttyUSB0";
 
   if (!nh_.getParam("/motor/left/name", left_motor_joint_name_))
     left_motor_joint_name_ = "base_l_wheel_joint";
@@ -317,22 +317,17 @@ void UbiquityMotor::SetWheelVelocities(float left_vel, float right_vel) {
 #undef CLAMP_TO_RANGE
 
   motor_message msg;
-  // msg.sync[0] = MOTOR_SYNC_BYTE0;
-  // msg.sync[1] = MOTOR_SYNC_BYTE1;
-  // msg.type = MOTOR_MSG_REQUEST_SPEED;
-  // msg.u.speed.motor0 = static_cast<int16_t>(roundf(left_vel));
-  // msg.u.speed.motor1 = static_cast<int16_t>(roundf(right_vel));
-
 
   msg.sync[0] = 0x7E;
-  msg.sync[1] = 0x01;
+  msg.sync[1] = 0x02;
   msg.type = 0xBB;
   msg.addr = 0x07;
-  msg.data[0] = static_cast<int32_t>(roundf(left_vel)) >> 16;
-  msg.data[1] = (static_cast<int32_t>(roundf(left_vel)) >> 8) - (msg.data[0] << 8);
-  msg.data[2] = static_cast<int32_t>(roundf(left_vel)) - (msg.data[0]<<16)|(msg.data[1]<<8);
+  msg.data[3] = (static_cast<int32_t>(roundf(left_vel)) >> 0) & 0xFF;
+  msg.data[2] = (static_cast<int32_t>(roundf(left_vel)) >> 8) & 0xFF;
+  msg.data[1] = (static_cast<int32_t>(roundf(left_vel)) >> 16) & 0xFF;
+  msg.data[0] = (static_cast<int32_t>(roundf(left_vel)) >> 24) & 0xFF;
 
-  int sum = msg.sync[1] + msg.type + msg.addr + msg.data[0] + msg.data[1] + msg.data[2];
+  int sum = msg.sync[1] + msg.type + msg.addr + msg.data[0] + msg.data[1] + msg.data[2] + msg.data[3];
   if (sum > 0xFF) {
     int tmp;
     tmp = sum >> 8;
@@ -342,18 +337,30 @@ void UbiquityMotor::SetWheelVelocities(float left_vel, float right_vel) {
   else {
     msg.checksum = 0xFF - sum;
   }
+
+  ROS_INFO("msg %x %x %x %x %x %x %x %x %x", 
+    msg.sync[0],
+    msg.sync[1],
+    msg.type,
+    msg.addr,
+    msg.data[0],
+    msg.data[1],
+    msg.data[2], 
+    msg.data[3],
+    msg.checksum);
 
   WriteAll(fd_, &msg, sizeof(msg));
   
   msg.sync[0] = 0x7E;
-  msg.sync[1] = 0x01;
+  msg.sync[1] = 0x02;
   msg.type = 0xBB;
   msg.addr = 0x08;
-  msg.data[0] = static_cast<int32_t>(roundf(right_vel)) >> 16;
-  msg.data[1] = (static_cast<int32_t>(roundf(right_vel)) >> 8) - (msg.data[0] << 8);
-  msg.data[2] = static_cast<int32_t>(roundf(right_vel)) - (msg.data[0]<<16)|(msg.data[1]<<8);
+  msg.data[3] = (static_cast<int32_t>(roundf(right_vel)) >> 0) & 0xFF;
+  msg.data[2] = (static_cast<int32_t>(roundf(right_vel)) >> 8) & 0xFF;
+  msg.data[1] = (static_cast<int32_t>(roundf(right_vel)) >> 16) & 0xFF;
+  msg.data[0] = (static_cast<int32_t>(roundf(right_vel)) >> 24) & 0xFF;
 
-  sum = msg.sync[1] + msg.type + msg.addr + msg.data[0] + msg.data[1] + msg.data[2];
+  sum = msg.sync[1] + msg.type + msg.addr + msg.data[0] + msg.data[1] + msg.data[2] + msg.data[3];
   if (sum > 0xFF) {
     int tmp;
     tmp = sum >> 8;
@@ -364,18 +371,16 @@ void UbiquityMotor::SetWheelVelocities(float left_vel, float right_vel) {
     msg.checksum = 0xFF - sum;
   }
 
-  //msg.checksum = 0x3C;
-
-  //ROS_INFO("checksum %x", msg.checksum);
-
-  // msg.sync[0] = 0x7E;
-  // msg.sync[1] = 0x01;
-  // msg.type = 0xBB;
-  // msg.addr = 0x07;
-  // msg.data[0] = 0x00;
-  // msg.data[1] = 0x01;
-  // msg.data[2] = 0x2C;
-  // msg.checksum = 0x0f;
+  ROS_INFO("msg %x %x %x %x %x %x %x %x %x", 
+    msg.sync[0],
+    msg.sync[1],
+    msg.type,
+    msg.addr,
+    msg.data[0],
+    msg.data[1],
+    msg.data[2], 
+    msg.data[3],
+    msg.checksum);
 
   WriteAll(fd_, &msg, sizeof(msg));
 }
