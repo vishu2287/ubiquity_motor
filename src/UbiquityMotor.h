@@ -11,6 +11,8 @@ class UbiquityMotor {
   UbiquityMotor();
   ~UbiquityMotor();
 
+  void run();
+
   int fd() const { return fd_; }
   bool done() const { return done_; }
 
@@ -57,6 +59,9 @@ class UbiquityMotor {
   // Callback function for "/cmd_vel"
   void CmdVelCallback(const geometry_msgs::Twist::ConstPtr &movement);
   void SetWheelVelocities(float left_vel, float right_vel);
+
+  void requestOdometry();
+
 
   std::string controller_tty_name_;
   std::string left_motor_joint_name_;
