@@ -314,7 +314,7 @@ UbiquityMotor::UbiquityMotor() : done_(false), has_odometer_(false) {
   nav_odom_pub_ = nh_.advertise<nav_msgs::Odometry>("/odom",
                                                          1 /* queue size */);
 
-  //pthread_create(&reader_thread_, NULL, UbiquityMotorReaderThread, this);
+  pthread_create(&reader_thread_, NULL, UbiquityMotorReaderThread, this);
 
   ROS_INFO("Initialization complete");
 }
@@ -430,13 +430,46 @@ void UbiquityMotor::requestOdometry()
   msg.sync[0] = 0x7E;
   msg.sync[1] = 0x02;
   msg.type = 0xAA;
-  msg.addr = 0x0b;
+  msg.addr = 0x0B;
   msg.data[3] = 0x00;
   msg.data[2] = 0x00;
   msg.data[1] = 0x00;
   msg.data[0] = 0x00;
 
   int sum = msg.sync[1] + msg.type + msg.addr + msg.data[0] + msg.data[1] + msg.data[2] + msg.data[3];
+  if (sum > 0xFF) {
+    int tmp;
+    tmp = sum >> 8;
+    tmp = tmp << 8;
+    msg.checksum = 0xFF - static_cast<uint8_t>(roundf(sum-tmp));
+  }
+  else {
+    msg.checksum = 0xFF - sum;
+  }
+
+  ROS_INFO("msg %x %x %x %x %x %x %x %x %x", 
+    msg.sync[0],
+    msg.sync[1],
+    msg.type,
+    msg.addr,
+    msg.data[0],
+    msg.data[1],
+    msg.data[2], 
+    msg.data[3],
+    msg.checksum);
+
+  WriteAll(fd_, &msg, sizeof(msg));
+
+  msg.sync[0] = 0x7E;
+  msg.sync[1] = 0x02;
+  msg.type = 0xAA;
+  msg.addr = 0x0C;
+  msg.data[3] = 0x00;
+  msg.data[2] = 0x00;
+  msg.data[1] = 0x00;
+  msg.data[0] = 0x00;
+
+  sum = msg.sync[1] + msg.type + msg.addr + msg.data[0] + msg.data[1] + msg.data[2] + msg.data[3];
   if (sum > 0xFF) {
     int tmp;
     tmp = sum >> 8;
@@ -468,7 +501,7 @@ void UbiquityMotor::run()
   while (ros::ok()) {
     ros::spinOnce();
     r.sleep();
-    //requestOdometry();
+    requestOdometry();
   }
 }
 
