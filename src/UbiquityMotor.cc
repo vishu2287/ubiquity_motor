@@ -314,7 +314,7 @@ UbiquityMotor::UbiquityMotor() : done_(false), has_odometer_(false) {
   nav_odom_pub_ = nh_.advertise<nav_msgs::Odometry>("/odom",
                                                          1 /* queue size */);
 
-  pthread_create(&reader_thread_, NULL, UbiquityMotorReaderThread, this);
+  //pthread_create(&reader_thread_, NULL, UbiquityMotorReaderThread, this);
 
   ROS_INFO("Initialization complete");
 }
@@ -338,6 +338,7 @@ void UbiquityMotor::CmdVelCallback(
   // 0.5 * wheel_base * movement.angular.z  robot rotation in m/s
   float angular_vel = -0.5 * wheel_base * movement->angular.z;
 
+  //ROS_INFO("cmd_vel callback");
   SetWheelVelocities(movement->linear.x + angular_vel,
                      movement->linear.x - angular_vel);
 }
@@ -465,8 +466,9 @@ void UbiquityMotor::run()
   ros::Rate r(10.0);
   //ros::spin();
   while (ros::ok()) {
+    ros::spinOnce();
     r.sleep();
-    requestOdometry();
+    //requestOdometry();
   }
 }
 
