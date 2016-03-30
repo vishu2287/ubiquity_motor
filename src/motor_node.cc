@@ -61,68 +61,36 @@ struct timespec current_time;
 main(int argc, char* argv[]) {
 	ros::init(argc, argv, "motor_node");
 	ros::NodeHandle nh;
-	MotorHardware robot(nh);
-	controller_manager::ControllerManager cm(&robot,nh);
 
-	ros::AsyncSpinner spinner(1);
-	spinner.start();
 
-	int32_t pid_proportional;
-	int32_t pid_integral;
-	int32_t pid_derivative;
-	int32_t pid_denominator;
+	std::string sPort;
+	int sBaud;
 
-	if (!nh.getParam("ubiquity_motor/pid_proportional", pid_proportional))
+	double sLoopRate;
+
+	if (!nh.getParam("ubiquity_motor/serial_port", sPort))
 	{
-		pid_proportional = 450;
-		nh.setParam("ubiquity_motor/pid_proportional", pid_proportional);
+		sPort.assign("/dev/ttyS0");
+		nh.setParam("ubiquity_motor/serial_port", sPort);
 	}
 
-	if (!nh.getParam("ubiquity_motor/pid_integral", pid_integral))
+	if (!nh.getParam("ubiquity_motor/serial_baud", sBaud))
 	{
-		pid_integral = 120;
-		nh.setParam("ubiquity_motor/pid_integral", pid_integral);
+		sBaud = 9600;
+		nh.setParam("ubiquity_motor/serial_baud", sBaud);
 	}
 
-	if (!nh.getParam("ubiquity_motor/pid_derivative", pid_derivative))
+	if (!nh.getParam("ubiquity_motor/serial_loop_rate", sLoopRate))
 	{
-		pid_derivative = 70;
-		nh.setParam("ubiquity_motor/pid_derivative", pid_derivative);
+		sLoopRate = 100;
+		nh.setParam("ubiquity_motor/serial_loop_rate", sLoopRate);
 	}
 
-	if (!nh.getParam("ubiquity_motor/pid_denominator", pid_denominator))
-	{
-		pid_derivative = 1000;
-		nh.setParam("ubiquity_motor/pid_denominator", pid_denominator);
-	}
+	MotorSerial motor_serial(sPort,sBaud,sLoopRate);
 
-	robot.setPid(pid_proportional,pid_integral,pid_derivative,pid_denominator);
-	robot.sendPid();
-	
-	double controller_loop_rate;
-	if (!nh.getParam("ubiquity_motor/controller_loop_rate", controller_loop_rate))
-	{
-		controller_loop_rate = 10;
-		nh.setParam("ubiquity_motor/controller_loop_rate", controller_loop_rate);
-	}
-
-	ros::Rate r(controller_loop_rate);
-	robot.requestVersion();
-
-
-	struct timespec last_time;
-	struct timespec current_time;
-	clock_gettime(CLOCK_MONOTONIC, &last_time);
-
-	while (ros::ok()) {
-		clock_gettime(CLOCK_MONOTONIC, &current_time);
-		ros::Duration elapsed = ros::Duration(current_time.tv_sec - last_time.tv_sec + (current_time.tv_nsec - last_time.tv_nsec) / BILLION);
-		last_time = current_time;
-		robot.sendPid();
-		robot.readInputs();
-		cm.update(ros::Time::now(), elapsed);
-		robot.writeSpeeds();
-		
-		r.sleep();
-	}
+	MotorMessage left_vel;
+	left_vel.setRegister(MotorMessage::REG_LEFT_SPEED_MEASURED);
+	left_vel.setType(MotorMessage::TYPE_READ);
+	left_vel.setData(300);
+	motor_serial.transmitCommand(left_vel);
 }
