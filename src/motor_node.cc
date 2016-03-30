@@ -93,4 +93,6 @@ main(int argc, char* argv[]) {
 	left_vel.setType(MotorMessage::TYPE_READ);
 	left_vel.setData(300);
 	motor_serial.transmitCommand(left_vel);
+
+	ros::spin();
 }
