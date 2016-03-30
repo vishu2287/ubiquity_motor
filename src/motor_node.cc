@@ -91,8 +91,8 @@ main(int argc, char* argv[]) {
 	ros::Rate r(5); 
 	while (ros::ok()){
 		MotorMessage left_vel;
-		left_vel.setRegister(MotorMessage::REG_LEFT_SPEED_MEASURED);
-		left_vel.setType(MotorMessage::TYPE_READ);
+		left_vel.setRegister(MotorMessage::REG_LEFT_SPEED_SET);
+		left_vel.setType(MotorMessage::TYPE_WRITE);
 		left_vel.setData(300);
 		motor_serial.transmitCommand(left_vel);
 		r.sleep();
