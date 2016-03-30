@@ -98,6 +98,10 @@ main(int argc, char* argv[]) {
 		r.sleep();
 	}
 
-
-	ros::spin();
+	MotorMessage left_vel;
+	left_vel.setRegister(MotorMessage::REG_LEFT_SPEED_SET);
+	left_vel.setType(MotorMessage::TYPE_WRITE);
+	left_vel.setData(0);
+	motor_serial.transmitCommand(left_vel);
+	r.sleep();
 }
