@@ -212,7 +212,7 @@ void MotorSerial::SerialThread() {
 				std::vector<uint8_t> out(8);
 
 				out = getInputCommand().serialize();
-				ROS_ERROR("out %x %x %x %x %x %x %x %x %x",
+				ROS_ERROR("out %02x %02x %02x %02x %02x %02x %02x %02x %02x",
 					out[0],
 					out[1],
 					out[2],
