@@ -188,6 +188,15 @@ void MotorSerial::SerialThread() {
 
 				MotorMessage mc;
 				int error_code = mc.deserialize(in);
+				ROS_ERROR("GOT: %02x %02x %02x %02x %02x %02x %02x %02x",
+				in[0],
+				in[1],
+				in[2],
+				in[3],
+				in[4],
+				in[5],
+				in[6],
+				in[7]);
 
 				if (error_code == 0) {
 					appendOutput(mc);
@@ -198,7 +207,17 @@ void MotorSerial::SerialThread() {
 					for (int i = 0; i < in.size() && i < 8; i++) {
 						rejected[i] = in.at(i);
 					}
-					ROS_ERROR("REJECT: %s", rejected);
+					// ROS_ERROR("REJECT: %x", rejected);
+					ROS_ERROR("REJECT: %02x %02x %02x %02x %02x %02x %02x %02x %02x",
+						rejected[0],
+						rejected[1],
+						rejected[2],
+						rejected[3],
+						rejected[4],
+						rejected[5],
+						rejected[6],
+						rejected[7],
+						rejected[8]);
 				} else {
 					failed_update = true;
 					ROS_ERROR("DESERIALIZATION ERROR! - %d", error_code);
@@ -212,7 +231,7 @@ void MotorSerial::SerialThread() {
 				std::vector<uint8_t> out(8);
 
 				out = getInputCommand().serialize();
-				ROS_ERROR("out %02x %02x %02x %02x %02x %02x %02x %02x %02x",
+				ROS_ERROR("out %02x %02x %02x %02x %02x %02x %02x %02x",
 					out[0],
 					out[1],
 					out[2],
