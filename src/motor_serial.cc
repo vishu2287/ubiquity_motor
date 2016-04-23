@@ -239,8 +239,7 @@ void MotorSerial::SerialThread() {
 					out[4],
 					out[5],
 					out[6],
-					out[7],
-					out[8]);
+					out[7]);
 				motors->write(out);
 			}
 
