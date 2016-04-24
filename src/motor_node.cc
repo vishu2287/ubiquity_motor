@@ -91,10 +91,11 @@ main(int argc, char* argv[]) {
 	MotorMessage left_vel;
 	left_vel.setRegister(MotorMessage::REG_LEFT_SPEED_SET);
 	left_vel.setType(MotorMessage::TYPE_WRITE);
-	left_vel.setData(0xabcdabcd);
+	//left_vel.setData(100);
+	left_vel.setData(10);
 	motor_serial.transmitCommand(left_vel);
 
-	ros::Rate r(5); 
+	ros::Rate r(100); 
 	while (ros::ok()){
 		MotorMessage left_vel;
 		left_vel.setRegister(MotorMessage::REG_LEFT_SPEED_SET);
@@ -102,4 +103,9 @@ main(int argc, char* argv[]) {
 		motor_serial.transmitCommand(left_vel);
 		r.sleep();
 	}
+	left_vel.setRegister(MotorMessage::REG_LEFT_SPEED_SET);
+	left_vel.setType(MotorMessage::TYPE_WRITE);
+	left_vel.setData(0);
+	motor_serial.transmitCommand(left_vel);
+	r.sleep();
 }
