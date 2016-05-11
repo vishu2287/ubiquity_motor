@@ -88,24 +88,24 @@ main(int argc, char* argv[]) {
 
 	MotorSerial motor_serial(sPort,sBaud,sLoopRate);
 
-	MotorMessage left_vel;
-	left_vel.setRegister(MotorMessage::REG_LEFT_SPEED_SET);
-	left_vel.setType(MotorMessage::TYPE_WRITE);
-	//left_vel.setData(100);
-	left_vel.setData(10);
-	motor_serial.transmitCommand(left_vel);
+	MotorMessage vel;
+	vel.setRegister(MotorMessage::REG_SPEED_BOTH);
+	vel.setType(MotorMessage::TYPE_WRITE);
+	//vel.setData(100);
+	vel.setData(0x00800080);
+	motor_serial.transmitCommand(vel);
 
 	ros::Rate r(100); 
 	while (ros::ok()){
-		MotorMessage left_vel;
-		left_vel.setRegister(MotorMessage::REG_LEFT_SPEED_SET);
-		left_vel.setType(MotorMessage::TYPE_READ);
-		motor_serial.transmitCommand(left_vel);
+		MotorMessage vel;
+		vel.setRegister(MotorMessage::REG_SPEED_BOTH);
+		vel.setType(MotorMessage::TYPE_READ);
+		motor_serial.transmitCommand(vel);
 		r.sleep();
 	}
-	left_vel.setRegister(MotorMessage::REG_LEFT_SPEED_SET);
-	left_vel.setType(MotorMessage::TYPE_WRITE);
-	left_vel.setData(0);
-	motor_serial.transmitCommand(left_vel);
+	vel.setRegister(MotorMessage::REG_SPEED_BOTH);
+	vel.setType(MotorMessage::TYPE_WRITE);
+	vel.setData(0);
+	motor_serial.transmitCommand(vel);
 	r.sleep();
 }
