@@ -92,7 +92,7 @@ main(int argc, char* argv[]) {
 	vel.setRegister(MotorMessage::REG_SPEED_BOTH);
 	vel.setType(MotorMessage::TYPE_WRITE);
 	//vel.setData(100);
-	vel.setData(0x00800080);
+	vel.setData(0x0000100002);
 	motor_serial.transmitCommand(vel);
 
 	ros::Rate r(100); 
