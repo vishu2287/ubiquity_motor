@@ -106,8 +106,7 @@ MotorHardware::~MotorHardware() { delete motor_serial_; }
 
 void MotorHardware::readInputs() {
     while (motor_serial_->commandAvailable()) {
-        MotorMessage mm;
-        mm = motor_serial_->receiveCommand();
+        MotorMessage mm = motor_serial_->receiveCommand();
         if (mm.getType() == MotorMessage::TYPE_RESPONSE) {
             switch (mm.getRegister()) {
                 case MotorMessage::REG_FIRMWARE_VERSION:
