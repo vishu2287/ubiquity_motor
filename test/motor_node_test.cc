@@ -45,7 +45,6 @@ void Vel_Odom_loopback() {
         mm_odom.setData((vel_left << 16) | (vel_right & 0x0000ffff));
         mm_odom.setType(MotorMessage::TYPE_RESPONSE);
         mm_odom.setRegister(MotorMessage::REG_BOTH_ODOM);
-        ROS_ERROR("Writing %f", ros::Time::now().toSec());
         motorSerial.transmitCommand(mm_odom);
 
         cmd_vel_pub.publish(vel);

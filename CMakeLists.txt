@@ -165,6 +165,11 @@ if(CATKIN_ENABLE_TESTING)
 		test/motor_hardware_test.cc )
 	target_link_libraries(motor_hardware_test ubiquity_motor util ${catkin_LIBRARIES})
 
+	add_rostest_gtest(motor_node_test
+			test/rostest/motor_node.test
+			test/motor_node_test.cc )
+	target_link_libraries(motor_node_test ubiquity_motor ${catkin_LIBRARIES})
+
 endif()
 
 ## Add folders to be run by python nosetests
