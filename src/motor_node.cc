@@ -39,8 +39,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include "controller_manager/controller_manager.h"
 
-static const double BILLION = 1000000000.0;
-
 static FirmwareParams firmware_params;
 static CommsParams serial_params;
 static NodeParams node_params;
