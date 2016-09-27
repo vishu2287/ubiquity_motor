@@ -20,16 +20,16 @@ void Vel_Odom_loopback() {
     last_time = current_time;
     ros::Duration elasped;
 
-    int16_t vel_left  = 0;
-    int16_t vel_right = 0;
+    int16_t dist_left  = 0;
+    int16_t dist_right = 0;
 
     while (ros::ok()) {
         while (motorSerial.commandAvailable()) {
             MotorMessage mm_vel = motorSerial.receiveCommand();
             if (mm_vel.getRegister() == MotorMessage::REG_BOTH_SPEED_SET) {
                 int32_t vel = mm_vel.getData();
-                vel_left  = (vel >> 16) & 0xffff;
-                vel_right = vel & 0xffff;
+                dist_left  = (vel >> 16) & 0xffff;
+                dist_right = vel & 0xffff;
             }
         }
 
@@ -38,11 +38,11 @@ void Vel_Odom_loopback() {
         last_time = current_time;
 
         // TODO figure out this fudging factor
-        vel_left *= elasped.toSec() * 2.7;
-        vel_right *= elasped.toSec() * 2.7;
+        dist_left *= elasped.toSec() * 2.7;
+        dist_right *= elasped.toSec() * 2.7;
 
         MotorMessage mm_odom;
-        mm_odom.setData((vel_left << 16) | (vel_right & 0x0000ffff));
+        mm_odom.setData((dist_left << 16) | (dist_right & 0x0000ffff));
         mm_odom.setType(MotorMessage::TYPE_RESPONSE);
         mm_odom.setRegister(MotorMessage::REG_BOTH_ODOM);
         motorSerial.transmitCommand(mm_odom);
