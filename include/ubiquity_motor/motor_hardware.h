@@ -58,6 +58,8 @@ public:
     void setDeadmanTimer(int32_t deadman);
     void setDebugLeds(bool led1, bool led2);
 
+    int transmitQueueSize();
+    int receiveQueueSize();
 private:
     void _addOdometryRequest(std::vector<MotorMessage>& commands) const;
     void _addVelocityRequest(std::vector<MotorMessage>& commands) const;

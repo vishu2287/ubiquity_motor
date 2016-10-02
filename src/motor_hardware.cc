@@ -361,3 +361,11 @@ int16_t MotorHardware::calculateTicsFromRadians(double radians) const {
 double MotorHardware::calculateRadiansFromTics(int16_t tics) const {
     return (tics * VELOCITY_READ_PER_SECOND / QTICS_PER_RADIAN);
 }
+
+int MotorHardware::transmitQueueSize() {
+    return motor_serial_->transmitQueueSize();
+}
+
+int MotorHardware::receiveQueueSize() {
+    return motor_serial_->commandAvailable();
+}

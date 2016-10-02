@@ -55,6 +55,13 @@ int MotorSerial::transmitCommands(const std::vector<MotorMessage>& commands) {
     return 0;
 }
 
+int MotorSerial::transmitQueueSize() {
+    if(input.fast_empty()) {
+        return 0;
+    }
+    return input.size();
+}
+
 MotorMessage MotorSerial::receiveCommand() {
     MotorMessage mc;
     if (!this->output.empty()) {
@@ -64,7 +71,12 @@ MotorMessage MotorSerial::receiveCommand() {
     return mc;
 }
 
-int MotorSerial::commandAvailable() { return !output.fast_empty(); }
+int MotorSerial::commandAvailable() {
+    if(output.fast_empty()) {
+        return 0;
+    }
+    return output.size();
+}
 
 int MotorSerial::inputAvailable() { return !input.fast_empty(); }
 
@@ -125,22 +137,18 @@ void MotorSerial::SerialThread() {
                 }
             }
 
-            bool did_update = false;
             while (inputAvailable()) {
-                did_update = true;
 
                 RawMotorMessage out;
 
-                out = getInputCommand().serialize();
+                out = input.front().serialize();
                 ROS_DEBUG("out %02x %02x %02x %02x %02x %02x %02x %02x", out[0],
                           out[1], out[2], out[3], out[4], out[5], out[6],
                           out[7]);
                 motors.write(out.c_array(), out.size());
-                boost::this_thread::sleep(boost::posix_time::milliseconds(2));
-            }
-
-            if (did_update) {
                 motors.flushOutput();
+                input.pop();
+                boost::this_thread::sleep(boost::posix_time::milliseconds(2));
             }
 
             boost::this_thread::interruption_point();

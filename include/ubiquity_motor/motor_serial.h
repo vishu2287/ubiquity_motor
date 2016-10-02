@@ -48,6 +48,7 @@ public:
 
     int transmitCommand(MotorMessage command);
     int transmitCommands(const std::vector<MotorMessage>& commands);
+    int transmitQueueSize();
 
     MotorMessage receiveCommand();
     int commandAvailable();
@@ -60,7 +61,6 @@ private:
 
     // queue for messages that are to be transmitted
     shared_queue<MotorMessage> input;
-
     shared_queue<MotorMessage> output;
 
     boost::thread serial_thread;

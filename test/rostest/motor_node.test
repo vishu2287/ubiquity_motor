@@ -1,4 +1,6 @@
 <launch>
+    <node name="tty0tty" pkg="tty0tty" type="tty0tty" args="/tmp/S0 /tmp/S1" output="screen"/>
+    
     <param name="use_gui" value="False"/>
     <param name="robot_description" textfile="$(find ubiquity_motor)/test/rostest/robot.urdf" />
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
@@ -8,8 +10,6 @@
 
     <node name="controller_spawner" pkg="controller_manager" type="spawner"
           args="ubiquity_velocity_controller ubiquity_joint_publisher --shutdown-timeout 0.1" />
-
-    <node name="tty0tty" pkg="tty0tty" type="tty0tty" args="/tmp/S0 /tmp/S1" output="screen"/>
 
     <param name="ubiquity_motor/serial_port" value="/tmp/S0" />
     <node name="motor_node" pkg="ubiquity_motor" type="motor_node">
