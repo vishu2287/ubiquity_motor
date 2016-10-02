@@ -60,6 +60,14 @@ protected:
 
     virtual void TearDown() { delete motors; }
 
+    void wait_transmit() {
+        while(motors->transmitQueueSize()) {};
+    }
+
+    void wait_receive(int receive = 1) {
+        while(motors->commandAvailable() < receive) {};
+    }
+
     MotorSerial *motors;
     int master_fd;
     int slave_fd;
@@ -74,7 +82,7 @@ TEST(MotorSerialNoFixtureTests, badPortnameException) {
 TEST_F(MotorSerialTests, serialClosedOnInterupt) {
     ASSERT_EQ(true, motors->motors.isOpen());
     motors->serial_thread.interrupt();
-    sleep(1);
+    usleep(5000);
     ASSERT_EQ(false, motors->motors.isOpen());
 }
 
@@ -83,8 +91,7 @@ TEST_F(MotorSerialTests, goodReadWorks) {
     // char test[]= {0x0E, 0x2C, 0x01, 0x00, 0x00, 0x07, 0xBB, 0x02, 0x7E};
     ASSERT_NE(-1, write(master_fd, test, 8));
 
-    while (!motors->commandAvailable()) {
-    }
+    wait_receive();
 
     MotorMessage mm;
     mm = motors->receiveCommand();
@@ -98,8 +105,7 @@ TEST_F(MotorSerialTests, misalignedOneGoodReadWorks) {
     // char test[]= {0x0E, 0x2C, 0x01, 0x00, 0x00, 0x07, 0xBB, 0x02, 0x7E};
     ASSERT_NE(-1, write(master_fd, test, 9));
 
-    while (!motors->commandAvailable()) {
-    }
+    wait_receive();
 
     MotorMessage mm;
     mm = motors->receiveCommand();
@@ -114,8 +120,7 @@ TEST_F(MotorSerialTests, misalignedManyGoodReadWorks) {
     // char test[]= {0x0E, 0x2C, 0x01, 0x00, 0x00, 0x07, 0xBB, 0x02, 0x7E};
     ASSERT_NE(-1, write(master_fd, test, 11));
 
-    while (!motors->commandAvailable()) {
-    }
+    wait_receive();
 
     MotorMessage mm;
     mm = motors->receiveCommand();
@@ -129,8 +134,7 @@ TEST_F(MotorSerialTests, errorReadWorks) {
     // uint8_t test[]= {0x7E, 0x02, 0xBB, 0x07, 0x00, 0x00, 0x01, 0x2C, 0x0E};
     ASSERT_NE(-1, write(master_fd, test, 8));
 
-    while (!motors->commandAvailable()) {
-    }
+    wait_receive();
 
     MotorMessage mm;
     mm = motors->receiveCommand();
@@ -276,6 +280,8 @@ TEST_F(MotorSerialTests, writeOutputs) {
     version.setData(0);
     motors->transmitCommand(version);
 
+    wait_transmit();
+
     RawMotorMessage input;
     EXPECT_EQ(input.size(), read(master_fd, input.c_array(), input.size()));
 
@@ -311,7 +317,8 @@ TEST_F(MotorSerialTests, writeMultipleOutputs) {
 
     motors->transmitCommands(commands);
 
-    sleep(2);
+    wait_transmit();
+
 
     uint8_t arr[32];
     EXPECT_EQ(32, read(master_fd, arr, 32));
