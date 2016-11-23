@@ -131,7 +131,7 @@ void MotorSerial::SerialThread() {
                 did_update = true;
 
                 RawMotorMessage out = getInputCommand().serialize();
-                ROS_DEBUG("out %02x %02x %02x %02x %02x %02x %02x %02x", out[0],
+                ROS_INFO("out %02x %02x %02x %02x %02x %02x %02x %02x", out[0],
                           out[1], out[2], out[3], out[4], out[5], out[6],
                           out[7]);
                 motors.write(out.c_array(), out.size());

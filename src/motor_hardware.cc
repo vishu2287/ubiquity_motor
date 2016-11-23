@@ -228,9 +228,9 @@ void MotorHardware::writeSpeeds() {
 
     motor_serial_->transmitCommand(both);
 
-    // ROS_ERROR("velocity_command %f rad/s %f rad/s",
-    // joints_[0].velocity_command, joints_[1].velocity_command);
-    // ROS_ERROR("SPEEDS %d %d", left.getData(), right.getData());
+    ROS_ERROR("velocity_command %f rad/s %f rad/s",
+      joints_[0].velocity_command, joints_[1].velocity_command);
+    ROS_ERROR("SPEEDS %d %d", left_tics, right_tics);
 }
 
 void MotorHardware::requestVersion() {
