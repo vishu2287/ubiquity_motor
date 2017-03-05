@@ -87,7 +87,6 @@ int main(int argc, char* argv[]) {
     robot.setParams(firmware_params);
 
     ros::Rate r(node_params.controller_loop_rate);
-    robot.requestVersion();
 
     int times = 0;
     auto future_verion = robot.requestVersion();
