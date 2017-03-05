@@ -62,17 +62,19 @@ int MotorSerial::transmitCommands(const std::vector<MotorMessage>& commands) {
     return 0;
 }
 
-MotorMessage MotorSerial::receiveCommand() {
-    MotorMessage mc;
+StampedMotorMessage MotorSerial::receiveCommand() {
+    StampedMotorMessage smm;
     if (!this->output.empty()) {
-        mc = output.front_pop();
+        smm = output.front_pop();
     }
-    return mc;
+    return smm;
 }
 
 int MotorSerial::commandAvailable() { return !output.fast_empty(); }
 
-void MotorSerial::appendOutput(MotorMessage command) { output.push(command); }
+void MotorSerial::appendOutput(StampedMotorMessage command) {
+    output.push(command);
+}
 
 void MotorSerial::SerialThread() {
     try {
@@ -80,6 +82,8 @@ void MotorSerial::SerialThread() {
             boost::this_thread::interruption_point();
             if (motors.waitReadable()) {
                 RawMotorMessage innew = {0, 0, 0, 0, 0, 0, 0, 0};
+                StampedMotorMessage smm;
+                smm.timestamp = ros::Time::now();
 
                 motors.read(innew.c_array(), 1);
                 if (innew[0] != MotorMessage::delimeter) {
@@ -97,13 +101,13 @@ void MotorSerial::SerialThread() {
                           innew[1], innew[2], innew[3], innew[4], innew[5],
                           innew[6], innew[7]);
 
-                MotorMessage mc;
-                int error_code = mc.deserialize(innew);
+                int error_code = smm.motor_message.deserialize(innew);
                 if (error_code == 0) {
-                    appendOutput(mc);
-                    if (mc.getType() == MotorMessage::TYPE_ERROR) {
+                    appendOutput(smm);
+                    if (smm.motor_message.getType() ==
+                        MotorMessage::TYPE_ERROR) {
                         ROS_ERROR("GOT error from Firm 0x%02x",
-                                  mc.getRegister());
+                                  smm.motor_message.getRegister());
                     }
                 } else {
                     ROS_ERROR("DESERIALIZATION ERROR! - %d", error_code);

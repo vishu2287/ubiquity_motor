@@ -50,7 +50,7 @@ public:
     MotorHardware(ros::NodeHandle nh, CommsParams serial_params,
                   FirmwareParams firmware_params);
     virtual ~MotorHardware();
-    void readInputs();
+    ros::Time readInputs();
     void writeSpeeds();
     void requestVersion();
     void setParams(FirmwareParams firmware_params);
@@ -85,6 +85,7 @@ private:
 
         Joint() : position(0), velocity(0), effort(0), velocity_command(0) {}
     } joints_[2];
+    ros::Time last_odom_update;
 
     ros::Publisher leftError;
     ros::Publisher rightError;

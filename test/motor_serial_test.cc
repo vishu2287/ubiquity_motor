@@ -86,8 +86,8 @@ TEST_F(MotorSerialTests, goodReadWorks) {
     while (!motors->commandAvailable()) {
     }
 
-    MotorMessage mm;
-    mm = motors->receiveCommand();
+    auto smm = motors->receiveCommand();
+    auto& mm = smm.motor_message;
     ASSERT_EQ(300, mm.getData());
     ASSERT_EQ(MotorMessage::TYPE_WRITE, mm.getType());
     ASSERT_EQ(MotorMessage::REG_LEFT_SPEED_SET, mm.getRegister());
@@ -101,8 +101,8 @@ TEST_F(MotorSerialTests, misalignedOneGoodReadWorks) {
     while (!motors->commandAvailable()) {
     }
 
-    MotorMessage mm;
-    mm = motors->receiveCommand();
+    auto smm = motors->receiveCommand();
+    auto& mm = smm.motor_message;
     ASSERT_EQ(300, mm.getData());
     ASSERT_EQ(MotorMessage::TYPE_WRITE, mm.getType());
     ASSERT_EQ(MotorMessage::REG_LEFT_SPEED_SET, mm.getRegister());
@@ -117,8 +117,8 @@ TEST_F(MotorSerialTests, misalignedManyGoodReadWorks) {
     while (!motors->commandAvailable()) {
     }
 
-    MotorMessage mm;
-    mm = motors->receiveCommand();
+    auto smm = motors->receiveCommand();
+    auto& mm = smm.motor_message;
     ASSERT_EQ(300, mm.getData());
     ASSERT_EQ(MotorMessage::TYPE_WRITE, mm.getType());
     ASSERT_EQ(MotorMessage::REG_LEFT_SPEED_SET, mm.getRegister());
@@ -132,8 +132,8 @@ TEST_F(MotorSerialTests, errorReadWorks) {
     while (!motors->commandAvailable()) {
     }
 
-    MotorMessage mm;
-    mm = motors->receiveCommand();
+    auto smm = motors->receiveCommand();
+    auto& mm = smm.motor_message;
     ASSERT_EQ(MotorMessage::TYPE_ERROR, mm.getType());
 }
 

@@ -105,10 +105,10 @@ MotorHardware::MotorHardware(ros::NodeHandle nh, CommsParams serial_params,
 
 MotorHardware::~MotorHardware() { delete motor_serial_; }
 
-void MotorHardware::readInputs() {
+ros::Time MotorHardware::readInputs() {
     while (motor_serial_->commandAvailable()) {
-        MotorMessage mm;
-        mm = motor_serial_->receiveCommand();
+        auto smm = motor_serial_->receiveCommand();
+        auto& mm = smm.motor_message;  // Hack
         if (mm.getType() == MotorMessage::TYPE_RESPONSE) {
             switch (mm.getRegister()) {
                 case MotorMessage::REG_FIRMWARE_VERSION:
@@ -131,6 +131,8 @@ void MotorHardware::readInputs() {
 
                     joints_[0].position += (odomLeft / TICS_PER_RADIAN);
                     joints_[1].position += (odomRight / TICS_PER_RADIAN);
+
+                    last_odom_update = smm.timestamp;
                     break;
                 }
                 case MotorMessage::REG_BOTH_ERROR: {
@@ -211,6 +213,8 @@ void MotorHardware::readInputs() {
             }
         }
     }
+
+    return last_odom_update;
 }
 
 void MotorHardware::writeSpeeds() {

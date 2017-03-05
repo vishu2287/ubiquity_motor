@@ -40,6 +40,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <gtest/gtest_prod.h>
 
+struct StampedMotorMessage {
+    ros::Time timestamp;
+    MotorMessage motor_message;
+};
+
 class MotorSerial {
 public:
     MotorSerial(const std::string& port = "/dev/ttyUSB0",
@@ -49,7 +54,7 @@ public:
     int transmitCommand(MotorMessage command);
     int transmitCommands(const std::vector<MotorMessage>& commands);
 
-    MotorMessage receiveCommand();
+    StampedMotorMessage receiveCommand();
     int commandAvailable();
 
     MotorSerial(const MotorSerial& other);       // non construction-copyable
@@ -58,11 +63,11 @@ public:
 private:
     serial::Serial motors;
 
-    shared_queue<MotorMessage> output;
+    shared_queue<StampedMotorMessage> output;
 
     boost::thread serial_thread;
 
-    void appendOutput(MotorMessage command);
+    void appendOutput(StampedMotorMessage command);
 
     // Thread that has manages serial reads
     void SerialThread();
