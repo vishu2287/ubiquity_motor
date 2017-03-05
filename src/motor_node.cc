@@ -45,6 +45,8 @@ static FirmwareParams firmware_params;
 static CommsParams serial_params;
 static NodeParams node_params;
 
+#define CURRENT_FIRMWARE_VERSION 26
+
 void PID_update_callback(const ubiquity_motor::PIDConfig& config,
                          uint32_t level) {
     if (level == 1) {
@@ -88,12 +90,27 @@ int main(int argc, char* argv[]) {
     robot.requestVersion();
 
     int times = 0;
-    while (robot.firmware_version == 0) {
-        if (times >= 10)
+    auto future_verion = robot.requestVersion();
+
+    // TODO: Make the futures actually async, so we can just use timeout here
+
+    auto status = future_verion.wait_for(std::chrono::seconds(1));
+
+    while (status != std::future_status::ready) {
+        if (times >= 10) {
+            ROS_FATAL("Firmware not reporting version, ABORT");
             throw std::runtime_error("Firmware not reporting its version");
+        }
         robot.readInputs();
-        r.sleep();
+        status = future_verion.wait_for(std::chrono::seconds(1));
         times++;
+    }
+
+    auto version = future_verion.get();
+    if (version < CURRENT_FIRMWARE_VERSION) {
+        ROS_FATAL("Firmware version %d is too low, minimum: %d",
+            version, CURRENT_FIRMWARE_VERSION);
+        throw std::runtime_error("Firmware version is too low");
     }
 
     ros::Time last_time;

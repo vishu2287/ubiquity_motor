@@ -239,18 +239,45 @@ TEST_F(MotorHardwareTests, requestVersionOutputs) {
     ASSERT_EQ(0, mm.getData());
 }
 
-TEST_F(MotorHardwareTests, oldFirmwareThrows) {
+
+TEST_F(MotorHardwareTests, requestVersionFuture) {
+    auto future_verion = robot->requestVersion();
+    wait_for_read();
+
     MotorMessage mm;
     mm.setType(MotorMessage::TYPE_RESPONSE);
     mm.setRegister(MotorMessage::REG_FIRMWARE_VERSION);
-    mm.setData(10);
+    mm.setData(200);
 
     RawMotorMessage out = mm.serialize();
     ASSERT_EQ(out.size(), write(master_fd, out.c_array(), out.size()));
-
     wait_for_write();
-    ASSERT_THROW(robot->readInputs(), std::runtime_error);
+
+    // Try 20 times
+    for (int i = 0; i < 20; ++i) {
+        robot->readInputs();
+        auto status = future_verion.wait_for(std::chrono::seconds(1));
+        if (status == std::future_status::ready) {
+            break;
+        }
+    }
+
+    ASSERT_TRUE(future_verion.valid());
+    ASSERT_EQ(200, future_verion.get());
 }
+
+// TEST_F(MotorHardwareTests, oldFirmwareThrows) {
+//     MotorMessage mm;
+//     mm.setType(MotorMessage::TYPE_RESPONSE);
+//     mm.setRegister(MotorMessage::REG_FIRMWARE_VERSION);
+//     mm.setData(10);
+
+//     RawMotorMessage out = mm.serialize();
+//     ASSERT_EQ(out.size(), write(master_fd, out.c_array(), out.size()));
+
+//     wait_for_write();
+//     ASSERT_THROW(robot->readInputs(), std::runtime_error);
+// }
 
 TEST_F(MotorHardwareTests, setDeadmanTimerOutputs) {
     robot->setDeadmanTimer(1000);

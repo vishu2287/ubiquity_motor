@@ -42,7 +42,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define QTICS_PER_RADIAN (TICS_PER_RADIAN * 4)
 #define VELOCITY_READ_PER_SECOND \
     10.0  // read = ticks / (100 ms), so we have scale of 10 for ticks/second
-#define CURRENT_FIRMWARE_VERSION 24
 
 MotorHardware::MotorHardware(ros::NodeHandle nh, CommsParams serial_params,
                              FirmwareParams firmware_params) {
@@ -90,17 +89,6 @@ ros::Time MotorHardware::readInputs() {
         auto& mm = smm.motor_message;  // Hack
         if (mm.getType() == MotorMessage::TYPE_RESPONSE) {
             switch (mm.getRegister()) {
-                case MotorMessage::REG_FIRMWARE_VERSION:
-                    if (mm.getData() < CURRENT_FIRMWARE_VERSION) {
-                        ROS_FATAL("Firmware version %d, expect %d or above",
-                                  mm.getData(), CURRENT_FIRMWARE_VERSION);
-                        throw std::runtime_error("Firmware version too low");
-                    } else {
-                        ROS_INFO("Firmware version %d", mm.getData());
-                        firmware_version = mm.getData();
-                    }
-                    break;
-
                 case MotorMessage::REG_BOTH_ODOM: {
                     int32_t odom = mm.getData();
                     // ROS_ERROR("odom signed %d", odom);
@@ -144,7 +132,12 @@ ros::Time MotorHardware::readInputs() {
                     }
                     break;
                 }
+                default: {
+                    auto search = promise_map.find(mm.getRegister());
+                    if(search != promise_map.end()) {
+                        search->second.set_value(mm.getData());
                     }
+                }
             }
         }
     }
@@ -170,12 +163,17 @@ void MotorHardware::writeSpeeds() {
     // ROS_ERROR("SPEEDS %d %d", left.getData(), right.getData());
 }
 
-void MotorHardware::requestVersion() {
+std::future<int> MotorHardware::requestVersion() {
     MotorMessage version;
     version.setRegister(MotorMessage::REG_FIRMWARE_VERSION);
     version.setType(MotorMessage::TYPE_READ);
     version.setData(0);
     motor_serial_->transmitCommand(version);
+
+    std::promise<int> version_promise;
+    auto future = version_promise.get_future();
+    promise_map.insert(std::make_pair(MotorMessage::REG_FIRMWARE_VERSION, std::move(version_promise)));
+    return future;
 }
 
 void MotorHardware::setDeadmanTimer(int32_t deadman_timer) {

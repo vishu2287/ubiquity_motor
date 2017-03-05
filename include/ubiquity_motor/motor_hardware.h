@@ -43,6 +43,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ubiquity_motor/motor_parmeters.h>
 #include <ubiquity_motor/motor_serial.h>
 
+#include <future>
+
 #include <gtest/gtest_prod.h>
 
 class MotorHardware : public hardware_interface::RobotHW {
@@ -52,7 +54,7 @@ public:
     virtual ~MotorHardware();
     ros::Time readInputs();
     void writeSpeeds();
-    void requestVersion();
+    std::future<int> requestVersion();
     void setParams(FirmwareParams firmware_params);
     void sendParams();
     void setDeadmanTimer(int32_t deadman);
@@ -69,6 +71,9 @@ private:
 
     hardware_interface::JointStateInterface joint_state_interface_;
     hardware_interface::VelocityJointInterface velocity_joint_interface_;
+
+    // Only allow 1 promise per register
+    std::map<MotorMessage::Registers, std::promise<int>> promise_map;
 
     FirmwareParams pid_params;
     FirmwareParams prev_pid_params;
