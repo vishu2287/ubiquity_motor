@@ -103,10 +103,11 @@ void MotorSerial::SerialThread() {
 
                 int error_code = smm.motor_message.deserialize(innew);
                 if (error_code == 0) {
+                    output_callback(smm);
                     appendOutput(smm);
                     if (smm.motor_message.getType() ==
                         MotorMessage::TYPE_ERROR) {
-                        ROS_ERROR("GOT error from Firm 0x%02x",
+                        ROS_ERROR("Got ERROR from Firmware 0x%02x",
                                   smm.motor_message.getRegister());
                     }
                 } else {

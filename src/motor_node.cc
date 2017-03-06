@@ -93,16 +93,11 @@ int main(int argc, char* argv[]) {
 
     // TODO: Make the futures actually async, so we can just use timeout here
 
-    auto status = future_verion.wait_for(std::chrono::seconds(1));
+    auto status = future_verion.wait_for(std::chrono::seconds(5));
 
-    while (status != std::future_status::ready) {
-        if (times >= 10) {
-            ROS_FATAL("Firmware not reporting version, ABORT");
-            throw std::runtime_error("Firmware not reporting its version");
-        }
-        robot.readInputs();
-        status = future_verion.wait_for(std::chrono::seconds(1));
-        times++;
+    if (status == std::future_status::timeout) {
+        ROS_FATAL("Firmware not reporting version, ABORT");
+        throw std::runtime_error("Firmware not reporting its version");
     }
 
     auto version = future_verion.get();

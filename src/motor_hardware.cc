@@ -64,6 +64,14 @@ MotorHardware::MotorHardware(ros::NodeHandle nh, CommsParams serial_params,
     motor_serial_ =
         new MotorSerial(serial_params.serial_port, serial_params.baud_rate);
 
+    motor_serial_->setCallback([this](StampedMotorMessage smm) {
+        auto search = promise_map.find(smm.motor_message.getRegister());
+        if(search != promise_map.end()) {
+            search->second.set_value(smm.motor_message.getData());
+            promise_map.erase(search);
+        }
+    });
+
     leftError = nh.advertise<std_msgs::Int32>("left_error", 1);
     rightError = nh.advertise<std_msgs::Int32>("right_error", 1);
 
@@ -133,10 +141,7 @@ ros::Time MotorHardware::readInputs() {
                     break;
                 }
                 default: {
-                    auto search = promise_map.find(mm.getRegister());
-                    if(search != promise_map.end()) {
-                        search->second.set_value(mm.getData());
-                    }
+
                 }
             }
         }

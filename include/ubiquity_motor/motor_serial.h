@@ -45,6 +45,8 @@ struct StampedMotorMessage {
     MotorMessage motor_message;
 };
 
+using SerialCallback = std::function<void(StampedMotorMessage)>;
+
 class MotorSerial {
 public:
     MotorSerial(const std::string& port = "/dev/ttyUSB0",
@@ -60,6 +62,8 @@ public:
     MotorSerial(const MotorSerial& other);       // non construction-copyable
     MotorSerial& operator=(const MotorSerial&);  // non copyable
 
+    void setCallback(SerialCallback callback) {output_callback = callback;}
+
 private:
     serial::Serial motors;
 
@@ -68,6 +72,8 @@ private:
     boost::thread serial_thread;
 
     void appendOutput(StampedMotorMessage command);
+
+    SerialCallback output_callback;
 
     // Thread that has manages serial reads
     void SerialThread();
