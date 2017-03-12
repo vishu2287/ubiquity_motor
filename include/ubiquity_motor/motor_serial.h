@@ -73,7 +73,7 @@ private:
 
     void appendOutput(StampedMotorMessage command);
 
-    SerialCallback output_callback;
+    SerialCallback output_callback = nullptr;
 
     // Thread that has manages serial reads
     void SerialThread();

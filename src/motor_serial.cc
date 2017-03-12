@@ -103,7 +103,9 @@ void MotorSerial::SerialThread() {
 
                 int error_code = smm.motor_message.deserialize(innew);
                 if (error_code == 0) {
-                    output_callback(smm);
+                    if (output_callback != nullptr) {
+                        output_callback(smm);
+                    }
                     appendOutput(smm);
                     if (smm.motor_message.getType() ==
                         MotorMessage::TYPE_ERROR) {
