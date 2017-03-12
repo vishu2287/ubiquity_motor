@@ -91,8 +91,6 @@ int main(int argc, char* argv[]) {
     int times = 0;
     auto future_verion = robot.requestVersion();
 
-    // TODO: Make the futures actually async, so we can just use timeout here
-
     auto status = future_verion.wait_for(std::chrono::seconds(5));
 
     if (status == std::future_status::timeout) {
@@ -107,15 +105,15 @@ int main(int argc, char* argv[]) {
         throw std::runtime_error("Firmware version is too low");
     }
 
-    ros::Time last_time;
-    ros::Time current_time;
-    ros::Duration elapsed;
-    last_time = ros::Time::now();
-
     for (int i = 0; i < 5; i++) {
         r.sleep();
         robot.sendParams();
     }
+
+    ros::Time last_time;
+    ros::Time current_time;
+    ros::Duration elapsed;
+    last_time = ros::Time::now();
 
     while (ros::ok()) {
         current_time = ros::Time::now();
