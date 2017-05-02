@@ -51,7 +51,7 @@ public:
                   FirmwareParams firmware_params);
     virtual ~MotorHardware();
     void readInputs();
-    void writeSpeeds();
+    void writeSpeeds(double dt);
     void requestVersion();
     void setParams(FirmwareParams firmware_params);
     void sendParams();
@@ -85,6 +85,11 @@ private:
 
         Joint() : position(0), velocity(0), effort(0), velocity_command(0) {}
     } joints_[2];
+
+    double prevLeftVelocity;
+    double prevRightVelocity;
+
+    double maxAcceleration;
 
     ros::Publisher leftError;
     ros::Publisher rightError;

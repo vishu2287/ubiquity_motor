@@ -45,7 +45,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define CURRENT_FIRMWARE_VERSION 24
 
 MotorHardware::MotorHardware(ros::NodeHandle nh, CommsParams serial_params,
-                             FirmwareParams firmware_params) {
+                             FirmwareParams firmware_params): prevLeftVelocity(0.0), 
+                                                              prevRightVelocity(0.0) {
     ros::V_string joint_names =
         boost::assign::list_of("left_wheel_joint")("right_wheel_joint");
 
@@ -67,6 +68,8 @@ MotorHardware::MotorHardware(ros::NodeHandle nh, CommsParams serial_params,
 
     leftError = nh.advertise<std_msgs::Int32>("left_error", 1);
     rightError = nh.advertise<std_msgs::Int32>("right_error", 1);
+
+    nh.param("max_acceleration", maxAcceleration, 1.0);
 
     pubU50 = nh.advertise<std_msgs::UInt32>("u50", 1);
     pubS50 = nh.advertise<std_msgs::Int32>("s50", 1);
@@ -213,12 +216,42 @@ void MotorHardware::readInputs() {
     }
 }
 
-void MotorHardware::writeSpeeds() {
+void MotorHardware::writeSpeeds(double dt) {
     MotorMessage both;
     both.setRegister(MotorMessage::REG_BOTH_SPEED_SET);
     both.setType(MotorMessage::TYPE_WRITE);
-    int16_t left_tics = calculateTicsFromRadians(joints_[0].velocity_command);
-    int16_t right_tics = calculateTicsFromRadians(joints_[1].velocity_command);
+
+    double leftVelocity = joints_[0].velocity_command;
+    double rightVelocity = joints_[1].velocity_command;
+
+    double maxChange = maxAcceleration * std::abs(dt);
+
+    if (leftVelocity > (prevLeftVelocity + maxChange)) {
+        double newVelocity = prevLeftVelocity + maxChange;
+        ROS_WARN("Requested left velocity of %f limited to %f", leftVelocity, newVelocity);
+        leftVelocity = newVelocity;
+    }
+    else if (leftVelocity < (prevLeftVelocity - maxChange)) {
+        double newVelocity = prevLeftVelocity - maxChange;
+        ROS_WARN("Requested left velocity of %f limited to %f", leftVelocity, newVelocity);
+        leftVelocity = newVelocity;
+    }
+    prevLeftVelocity = leftVelocity;
+
+    if (rightVelocity > (prevRightVelocity + maxChange)) {
+        double newVelocity = prevRightVelocity + maxChange;
+        ROS_WARN("Requested right velocity of %f limited to %f", rightVelocity, newVelocity);
+        rightVelocity = newVelocity;
+    }
+    else if (rightVelocity < (prevRightVelocity - maxChange)) {
+        double newVelocity = prevRightVelocity - maxChange;
+        ROS_WARN("Requested right velocity of %f limited to %f", rightVelocity, newVelocity);
+        rightVelocity = newVelocity;
+    }
+    prevRightVelocity = rightVelocity;
+ 
+    int16_t left_tics = calculateTicsFromRadians(leftVelocity);
+    int16_t right_tics = calculateTicsFromRadians(rightVelocity);
 
     // The masking with 0x0000ffff is necessary for handling -ve numbers
     int32_t data = (left_tics << 16) | (right_tics & 0x0000ffff);
@@ -229,10 +262,6 @@ void MotorHardware::writeSpeeds() {
     pubS59.publish(smsg);
 
     motor_serial_->transmitCommand(both);
-
-    // ROS_ERROR("velocity_command %f rad/s %f rad/s",
-    // joints_[0].velocity_command, joints_[1].velocity_command);
-    // ROS_ERROR("SPEEDS %d %d", left.getData(), right.getData());
 }
 
 void MotorHardware::requestVersion() {

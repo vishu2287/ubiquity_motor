@@ -114,7 +114,7 @@ int main(int argc, char* argv[]) {
         cm.update(ros::Time::now(), elapsed);
         robot.setParams(firmware_params);
         robot.sendParams();
-        robot.writeSpeeds();
+        robot.writeSpeeds(elapsed.toSec());
 
         r.sleep();
     }
